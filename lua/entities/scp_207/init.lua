@@ -28,22 +28,24 @@ function RemoveEffect(ply)
 end
 
 local function HealthLoss(ply)
-    if not IsValid(ply) then return end
-    if not ply:IsPlayer() then return end
-    if not ply:Alive() then return end
+    if not IsValid(ply)
+    or not ply:IsPlayer()
+    or not ply:Alive() then return end
 
-    ply:SetHealth(math.max(ply:Health() - 1, 0))
-    print("Player " .. ply:Nick() .. " lost 1 health due to SCP-207 effect.") -- Debug
+    local timerName = "SCP207_HealthLoss_" .. ply:SteamID()
+    if not timer.Exists(timerName) then
+        timer.Create(timerName, 2, 0, function()
+            if IsValid(ply) and ply:IsPlayer() and ply:Alive() then
+                ply:SetHealth(math.max(ply:Health() - 1, 0))
+                print("Player " .. ply:Nick() .. " lost 1 health due to SCP-207 effect.") -- Debug
 
-    -- Die Funktion HealthLoss wird rekursiv aufgerufen, um alle 2 Sekunden den HealthLoss des Spielers zu überprüfen und zu aktualisieren,
-    -- solange der Spieler noch lebt und SCP-207 den Effekt hat. Das stellt sicher, dass der HealthLoss regelmäßig überprüft wird, während
-    -- der Effekt aktiv ist, und stoppt, sobald der Spieler stirbt oder SCP-207 entfernt wird.
-    if ply:Health() <= 0 then
-        print("Player " .. ply:Nick() .. " died due to SCP-207 effect.") -- Debug
-        ply:Kill() -- Töte den Spieler, wenn er keine Gesundheit mehr hat (TODO-Frage: Sollte Tod durch SCP-207 als Selbstmord gewertet werden?)
-    else
-        timer.Create("SCP207_HealthLoss" .. ply:SteamID(), 2, 0, function() -- Erstelle einen Timer, der alle 2 Sekunden HealthLoss() ausführt
-            HealthLoss(ply)
+                if ply:Health() <= 0 then
+                    print("Player " .. ply:Nick() .. " died due to SCP-207 effect.") -- Debug
+                    ply:Kill() -- Töte den Spieler, wenn er keine Gesundheit mehr hat
+                end
+            else
+                timer.Remove(timerName) -- Entferne den Timer, wenn der Spieler nicht mehr existiert oder tot ist
+            end
         end)
     end
 end
